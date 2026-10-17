@@ -1,0 +1,40 @@
+{
+  "bin": {
+    "pkgverdict": "dist/cli.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1",
+    "zod": "^3"
+  },
+  "description": "Pre-install verdicts for npm packages: GO, RISKY, FAKE, or MISSING. Built for humans and AI agents.",
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "integrations"
+  ],
+  "homepage": "https://github.com/CloudCorpRecords/pkgverdict#readme",
+  "license": "MIT",
+  "name": "pkgverdict",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CloudCorpRecords/pkgverdict.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}
