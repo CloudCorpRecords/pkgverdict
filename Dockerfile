@@ -21,4 +21,5 @@ ENTRYPOINT ["node", "/app/dist/cli.js"]
 CMD ["mcp"]
 LABEL org.opencontainers.image.source="https://github.com/CloudCorpRecords/pkgverdict" \
       org.opencontainers.image.description="pkgverdict: pre-install verdicts for npm packages. One bin serves the CLI and a stdio MCP server." \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="MIT" \
+      io.modelcontextprotocol.server.name="io.github.CloudCorpRecords/pkgverdict"
