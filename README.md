@@ -63,6 +63,22 @@ Exit codes: `0` when everything is GO (or RISKY without `--strict`), `1` when a 
 
 Signals come from the npm registry (metadata, downloads), the OSV database (advisories), and a bundled list of well-known packages for lookalike detection. Responses cache under `~/.cache/pkgverdict` (6h metadata, 1h advisories); delete that directory to force fresh checks.
 
+## Run it with Docker
+
+pkgverdict also ships as a container image on GHCR: `ghcr.io/cloudcorprecords/pkgverdict`.
+
+Use it as a stdio MCP server:
+
+```bash
+docker run -i ghcr.io/cloudcorprecords/pkgverdict
+```
+
+Any CLI command can be passed after the image name instead of the default `mcp` argument:
+
+```bash
+docker run ghcr.io/cloudcorprecords/pkgverdict <command> [args]
+```
+
 ## MCP server
 
 Run it with `npx -y pkgverdict mcp` (stdio), or point your agent at the `pkgverdict` command with the single argument `mcp`. Two tools: `check_package` (verdict on one package) and `scan_dependencies` (worst-first verdicts for a project's package.json).
