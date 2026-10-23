@@ -2,7 +2,7 @@
   "mcpServers": {
     "pkgverdict": {
       "command": "docker",
-      "args": ["run", "--rm", "-i", "ghcr.io/cloudcorprecords/pkgverdict", "mcp"]
+      "args": ["run", "--rm", "-i", "ghcr.io/cloudcorprecords/pkgverdict:0.1.1", "mcp"]
     }
   }
 }
