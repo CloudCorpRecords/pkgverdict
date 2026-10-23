@@ -1,5 +1,5 @@
-# pkgverdict as a container image (GHCR).
-# The image runs the same bin as the npm package: dist/cli.js.
+# pkgverdict as a container image (GHCR) — the primary distribution.
+# The image runs the pkgverdict bin: dist/cli.js.
 # Default command is "mcp", so `docker run -i <image>` is a stdio MCP server;
 # any other arguments reach the CLI normally.
 FROM node:20-alpine AS build

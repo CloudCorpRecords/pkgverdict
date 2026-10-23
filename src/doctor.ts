@@ -11,7 +11,7 @@ export interface DoctorLine {
   detail: string;
 }
 
-async function reachable(url: string, init?: RequestInit): Promise<boolean> {
+async function reachableOnce(url: string, init?: RequestInit): Promise<boolean> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 10000);
   try {
@@ -23,6 +23,20 @@ async function reachable(url: string, init?: RequestInit): Promise<boolean> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Reachability probe. PV-9: OSV flapped once in production validation — a
+ * single transient fetch failure (timeout, reset) reported NOT READY while
+ * the API was up. Callers that pass `retries` get that many extra attempts
+ * before the probe is allowed to declare the host down.
+ */
+export async function reachable(url: string, init?: RequestInit, retries = 0): Promise<boolean> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (await reachableOnce(url, init)) return true;
+    if (attempt < retries) await new Promise((r) => setTimeout(r, 400));
+  }
+  return false;
 }
 
 export async function doctor(): Promise<{ lines: DoctorLine[]; ready: boolean }> {
@@ -40,7 +54,8 @@ export async function doctor(): Promise<{ lines: DoctorLine[]; ready: boolean }>
   });
   lines.push({
     name: "osv advisories",
-    ok: await reachable("https://api.osv.dev/v1/query", { method: "POST", body: "{}" }),
+    // PV-9: retry the OSV probe once before declaring NOT READY.
+    ok: await reachable("https://api.osv.dev/v1/query", { method: "POST", body: "{}" }, 1),
     detail: "https://api.osv.dev must answer for vulnerability checks",
   });
   let cacheOk = false;

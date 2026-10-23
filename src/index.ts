@@ -1,6 +1,7 @@
 /**
  * pkgverdict MCP server (stdio): check_package and scan_dependencies.
- * Run with `pkgverdict mcp` or `npx -y pkgverdict mcp`.
+ * Run with `pkgverdict mcp`, or via Docker:
+ * `docker run --rm -i ghcr.io/cloudcorprecords/pkgverdict mcp`.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -10,7 +11,7 @@ import { scanDependencies } from "./scan.js";
 import { scoreSignals } from "./verdict.js";
 
 export function buildMcpServer(): McpServer {
-  const server = new McpServer({ name: "pkgverdict", version: "0.1.0" });
+  const server = new McpServer({ name: "pkgverdict", version: "0.1.1" });
 
   server.tool(
     "check_package",

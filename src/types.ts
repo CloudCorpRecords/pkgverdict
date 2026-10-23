@@ -12,6 +12,10 @@ export interface Advisory {
   summary: string;
   severity?: string;
   malicious?: boolean;
+  /** OSV aliases (e.g. a MAL- id hiding behind a GHSA id), when known. */
+  aliases?: string[];
+  /** Long-form OSV details text, when fetched; feeds malicious classification. */
+  details?: string;
 }
 
 export interface PackageSignals {
@@ -32,6 +36,10 @@ export interface PackageSignals {
   installScripts?: Record<string, string>;
   advisories?: Advisory[];
   similarTo?: SimilarName[];
+  /** Packument exists but every version was unpublished: nothing installable. */
+  noInstallableVersion?: boolean;
+  /** The requested version's manifest 404'd: that version is not on the registry. */
+  versionNotFound?: boolean;
 }
 
 export interface VerdictResult {

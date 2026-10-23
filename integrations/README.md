@@ -1,9 +1,11 @@
 # Agent integrations
 
-One command sets up your AI coding tool (run it in your project directory):
+One command sets up your AI coding tool (run it in your project directory).
+pkgverdict ships as a Docker image on GHCR — there is no npm package, so the
+setup command runs through Docker with your project directory mounted:
 
 ```bash
-npx -y pkgverdict init --agent claude-code
+docker run --rm -v "$PWD":/work -w /work ghcr.io/cloudcorprecords/pkgverdict init --agent claude-code
 ```
 
 Supported tools: `claude-code`, `cursor`, `copilot` (VS Code), `windsurf`,

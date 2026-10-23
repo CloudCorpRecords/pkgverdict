@@ -22,7 +22,7 @@ import { collectSignals } from "./signals.js";
 import type { Verdict, VerdictResult } from "./types.js";
 import { scoreSignals } from "./verdict.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 
 function failVerdict(result: VerdictResult, strict: boolean): boolean {
   if (result.verdict === "FAKE" || result.verdict === "MISSING") return true;
@@ -41,6 +41,9 @@ function usageError(message: string): never {
 
 const HELP: Record<string, string> = {
   top: `pkgverdict ${VERSION}: pre-install verdicts for npm packages.
+
+Run it via the GHCR image (there is no npm package named pkgverdict):
+  docker run --rm ghcr.io/cloudcorprecords/pkgverdict check <name[@version]>
 
   check <name[@version]>   verdict on one package: GO, RISKY, FAKE, MISSING
   scan [dir]               check every dependency in package.json, worst first
@@ -153,6 +156,11 @@ function cmdInit(args: string[]): void {
 
 async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2);
+  if (cmd === "--help" || cmd === "-h") {
+    // PV-7: --help / -h are help, not unknown commands.
+    console.log(HELP.top);
+    return;
+  }
   if (!cmd || cmd === "help") {
     const topic = rest[0] && HELP[rest[0]] ? rest[0] : "top";
     console.log(HELP[topic]);

@@ -57,4 +57,63 @@ describe("verdicts", () => {
     assert.equal(r.verdict, "MISSING");
     assert.match(r.reasons.join(" "), /react/);
   });
+  it("PV-2/PV-3: unknown age/downloads never render as established/popular", () => {
+    const r = scoreSignals(F.UNKNOWN_AGE_AND_DOWNLOADS);
+    assert.equal(r.verdict, "GO");
+    const text = r.reasons.join(" ");
+    assert.doesNotMatch(text, /established/);
+    assert.doesNotMatch(text, /popular/);
+    assert.match(text, /age unknown/);
+    assert.match(text, /download count unknown/);
+  });
+  it("PV-2: very young package is RISKY via the very-young rule", () => {
+    const r = scoreSignals(F.VERY_YOUNG);
+    assert.equal(r.verdict, "RISKY");
+    assert.ok(r.flags.includes("very-young"));
+  });
+  it("PV-4: GHSA-ID malicious advisory is FAKE", () => {
+    const r = scoreSignals(F.GHSA_MALICIOUS);
+    assert.equal(r.verdict, "FAKE");
+    assert.ok(r.flags.includes("malicious-advisory"));
+    assert.match(r.reasons.join(" "), /GHSA-mh6f-8j2x-4483/);
+  });
+  it("PV-4: ordinary vulnerabilities stay RISKY, not FAKE", () => {
+    const r = scoreSignals(F.ORDINARY_VULNS);
+    assert.equal(r.verdict, "RISKY");
+    assert.ok(r.flags.includes("advisories"));
+    assert.ok(!r.flags.includes("malicious-advisory"));
+  });
+  it("PV-5: established original (colors) is not flagged for resembling picocolors", () => {
+    const r = scoreSignals(F.COLORS_ESTABLISHED_LOOKALIKE);
+    assert.equal(r.verdict, "GO");
+    assert.ok(!r.flags.includes("lookalike-name"));
+  });
+  it("PV-5: young obscure lookalike with a MAL advisory still FAKEs", () => {
+    const r = scoreSignals(F.LODAHS_TAIL);
+    assert.equal(r.verdict, "FAKE");
+  });
+  it("PV-6: tombstone package says not installable, not no-repo/no-license", () => {
+    const r = scoreSignals(F.TOMBSTONE);
+    assert.equal(r.verdict, "RISKY");
+    assert.ok(r.flags.includes("not-installable"));
+    const text = r.reasons.join(" ");
+    assert.match(text, /not installable|unpublished/i);
+    assert.doesNotMatch(text, /No repository link/);
+    assert.doesNotMatch(text, /No license declared/);
+  });
+  it("PV-6: removed version headlines version-not-found, not field complaints", () => {
+    const r = scoreSignals(F.VERSION_NOT_FOUND);
+    assert.equal(r.verdict, "RISKY");
+    assert.ok(r.flags.includes("version-not-found"));
+    assert.match(r.reasons[0], /not found|removed from the registry/i);
+    const text = r.reasons.join(" ");
+    assert.doesNotMatch(text, /No repository link/);
+    assert.doesNotMatch(text, /No license declared/);
+  });
+  it("PV-6+PV-4: removed malicious version is FAKE and says the version is gone", () => {
+    const r = scoreSignals(F.VERSION_NOT_FOUND_MALICIOUS);
+    assert.equal(r.verdict, "FAKE");
+    assert.ok(r.flags.includes("malicious-advisory"));
+    assert.match(r.reasons.join(" "), /not found|removed from the registry/i);
+  });
 });

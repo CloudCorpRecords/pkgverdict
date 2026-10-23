@@ -6,11 +6,11 @@
     "url": "https://github.com/CloudCorpRecords/pkgverdict",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/cloudcorprecords/pkgverdict:0.1.0",
+      "identifier": "ghcr.io/cloudcorprecords/pkgverdict:0.1.1",
       "runtimeHint": "docker",
       "runtimeArguments": [
         {

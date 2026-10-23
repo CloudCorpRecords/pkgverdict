@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "pkgverdict": {
-      "command": "npx",
-      "args": ["-y", "pkgverdict", "mcp"]
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "ghcr.io/cloudcorprecords/pkgverdict", "mcp"]
     }
   }
 }

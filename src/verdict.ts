@@ -11,6 +11,25 @@ import type { PackageSignals, Verdict, VerdictResult } from "./types.js";
 const YOUNG_DAYS = 180;
 const OBSCURE_DOWNLOADS = 1000;
 
+/**
+ * Established-package exemption for the lookalike RISKY branch (PV-5): a
+ * package that is itself old and heavily downloaded is the original, not an
+ * imitation — `colors` (2011, ~14M/wk) must not flag for resembling its own
+ * successor `picocolors`. The FAKE typosquat branch keeps its younger/obscure
+ * thresholds; this guard only stops the caution flag on proven incumbents.
+ */
+const ESTABLISHED_AGE_DAYS = 365;
+const ESTABLISHED_DOWNLOADS = 1_000_000;
+
+function isEstablished(s: PackageSignals): boolean {
+  return (
+    s.ageDays !== undefined &&
+    s.ageDays >= ESTABLISHED_AGE_DAYS &&
+    s.weeklyDownloads !== undefined &&
+    s.weeklyDownloads >= ESTABLISHED_DOWNLOADS
+  );
+}
+
 /** Tokens in an install script that deserve at least a hard look. */
 const SCRIPT_RISK = [
   "curl",
@@ -59,6 +78,20 @@ export function scoreSignals(s: PackageSignals): VerdictResult {
     };
   }
 
+  // PV-6: tombstone packument — the name exists but every version was
+  // unpublished. The honest headline is "not installable", not field noise.
+  if (s.noInstallableVersion) {
+    return {
+      package: s.name,
+      verdict: "RISKY",
+      reasons: [
+        `${s.name} is not installable: every version has been unpublished from the npm registry, so there is nothing to install. Pick a maintained alternative.`,
+      ],
+      flags: ["not-installable"],
+      signals: s,
+    };
+  }
+
   const similar = s.similarTo ?? [];
   const young = (s.ageDays ?? YOUNG_DAYS + 1) <= YOUNG_DAYS;
   const obscure = (s.weeklyDownloads ?? 0) < OBSCURE_DOWNLOADS;
@@ -68,6 +101,15 @@ export function scoreSignals(s: PackageSignals): VerdictResult {
   const scriptHits = Object.entries(scripts).flatMap(([k, v]) =>
     scriptRisk(v).map((t) => `${k} contains ${t}`)
   );
+
+  // PV-6: a requested version whose manifest 404'd leads every verdict —
+  // the version was removed from the registry (or never published).
+  if (s.versionNotFound) {
+    reasons.push(
+      `Version ${s.requestedVersion ?? s.version} not found — it was removed from the registry (or never published), so it cannot be installed.`
+    );
+    flags.push("version-not-found");
+  }
 
   let verdict: Verdict = "GO";
 
@@ -95,6 +137,9 @@ export function scoreSignals(s: PackageSignals): VerdictResult {
   if (verdict === "FAKE") return { package: s.name, version: s.version, verdict, reasons, flags, signals: s };
 
   // RISKY: caution signals.
+  if (s.versionNotFound) {
+    verdict = "RISKY";
+  }
   if (Object.keys(scripts).length > 0) {
     verdict = "RISKY";
     reasons.push(
@@ -107,7 +152,7 @@ export function scoreSignals(s: PackageSignals): VerdictResult {
     reasons.push(`Install script deserves a look: ${scriptHits.join("; ")}.`);
     flags.push("suspicious-install-script");
   }
-  if (similar.length > 0) {
+  if (similar.length > 0 && !isEstablished(s)) {
     verdict = "RISKY";
     reasons.push(`Name resembles ${similar.map((x) => x.name).join(", ")} — confirm you typed the right one.`);
     flags.push("lookalike-name");
@@ -127,12 +172,14 @@ export function scoreSignals(s: PackageSignals): VerdictResult {
     reasons.push(`Deprecated by its maintainers: ${s.deprecated.slice(0, 160)}`);
     flags.push("deprecated");
   }
-  if (!s.repository) {
+  // PV-6: when the version manifest 404'd, repo/license are unknown, not
+  // absent — never turn a missing version into field complaints.
+  if (!s.versionNotFound && !s.repository) {
     verdict = "RISKY";
     reasons.push("No repository link — you cannot read the source you are about to run.");
     flags.push("no-repository");
   }
-  if (!s.license) {
+  if (!s.versionNotFound && !s.license) {
     verdict = "RISKY";
     reasons.push("No license declared — legally murky to depend on.");
     flags.push("no-license");
@@ -144,16 +191,24 @@ export function scoreSignals(s: PackageSignals): VerdictResult {
   }
   if (verdict === "RISKY") return { package: s.name, version: s.version, verdict, reasons, flags, signals: s };
 
-  // GO.
-  const age = s.ageDays !== undefined ? `${Math.floor(s.ageDays / 365) > 0 ? `${Math.floor(s.ageDays / 365)}y` : `${s.ageDays}d`} old` : "established";
+  // GO. PV-2/PV-3: unknown age is "age unknown" (never "established") and
+  // unknown downloads are "download count unknown" (never "popular").
+  const age =
+    s.ageDays !== undefined
+      ? `${Math.floor(s.ageDays / 365) > 0 ? `${Math.floor(s.ageDays / 365)}y` : `${s.ageDays}d`} old`
+      : "age unknown";
   const dl =
     s.weeklyDownloads === undefined
-      ? "popular"
+      ? "download count unknown"
       : s.weeklyDownloads >= 1_000_000
         ? `${(s.weeklyDownloads / 1_000_000).toFixed(1)}M/wk`
         : s.weeklyDownloads >= 1000
           ? `${(s.weeklyDownloads / 1000).toFixed(1)}k/wk`
           : `${s.weeklyDownloads}/wk`;
-  reasons.push(`${age}, ${dl}, no install scripts, no advisories, no lookalike name.`);
+  const lookalikeNote =
+    similar.length > 0
+      ? `name resembles ${similar.map((x) => x.name).join(", ")} but this package is itself long-established`
+      : "no lookalike name";
+  reasons.push(`${age}, ${dl}, no install scripts, no advisories, ${lookalikeNote}.`);
   return { package: s.name, version: s.version, verdict, reasons, flags, signals: s };
 }
